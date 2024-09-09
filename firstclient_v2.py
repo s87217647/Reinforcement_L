@@ -10,19 +10,19 @@ import datetime
 # ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 SERVER_IP = '35.193.27.191'
-SPORT = 10025 # check your port number
+SPORT = 10025  # check your port number
+
 
 class MyAgent:
     def __init__(self) -> None:
         # initial state is always (0,0)
-        self.current_state = (0,0)
+        self.current_state = (0, 0)
 
-    #     Added by Swift
+        #     Added by Swift
         self.a = None
         self.rewardMap = {'0': 0, '1': 0, '2': 0, '3': 0}
 
-
-    def __is_valid(self, d:str) -> bool:
+    def __is_valid(self, d: str) -> bool:
         """Check if the reply contains valid values
 
         Args:
@@ -36,8 +36,8 @@ class MyAgent:
         if d.split(',')[0] == '200':
             return True
         return False
-    
-    def __parse_msg(self, d:str) -> list:
+
+    def __parse_msg(self, d: str) -> list:
         """Parse the message and return the values (new state (x,y), reward r, and if it reached a terminal state)
 
         Args:
@@ -55,46 +55,44 @@ class MyAgent:
         r = int(reply[3])
         terminal = int(reply[4])
         return new_x, new_y, r, terminal
-    
+
     def randomAct(self):
-        return random.choice([0,1,2,3])
+        return random.choice([0, 1, 2, 3])
 
-    def myLogic1(self, reward:int) -> int :
-        #logic 1 - pick from most rewarding move from the past
+    def myLogic1(self, reward: int) -> int:
+        # logic 1 - pick from most rewarding move from the past
 
-            if self.a is not None:
-                self.rewardMap[str(self.a)] += reward
+        if self.a is not None:
+            self.rewardMap[str(self.a)] += reward
 
-            maxRewardAction = '0'
-            for a, r in self.rewardMap.items():
-                if r > self.rewardMap[maxRewardAction]:
-                    maxRewardAction = a
+        maxRewardAction = '0'
+        for a, r in self.rewardMap.items():
+            if r > self.rewardMap[maxRewardAction]:
+                maxRewardAction = a
 
+        # print(self.rewardMap)
 
-            #print(self.rewardMap)
-
-            self.a = int(maxRewardAction)
+        self.a = int(maxRewardAction)
         # if best policy is below 0, just random
-            if self.rewardMap[str(self.a)] < 0:
-                self.a = random.choice([0,1,2,3])
+        if self.rewardMap[str(self.a)] < 0:
+            self.a = random.choice([0, 1, 2, 3])
 
+        self.a = random.choice([0, 1, 2, 3, 0, 2, 0, 2])  # random policy
 
-            self.a = random.choice([0,1,2,3,0,2,0,2]) # random policy
-
-            return self.a
+        return self.a
 
     def myLogic2(self, reward: int) -> int:
         if self.a is None:
             self.a = 2
 
-        #Hit the wall
+        # Hit the wall
         if self.current_state[0] == 99:
             if self.current_state[1] % 2 == 0:
                 self.a = 0
             else:
                 self.a = 3
 
-        #Hit the opposite wall
+        # Hit the opposite wall
         if self.current_state[0] == 0:
             if self.current_state[1] % 2 == 0:
                 self.a = 2
@@ -113,13 +111,19 @@ class MyAgent:
             choices.append(2)
 
         if target[1] - self.current_state[1] > 0:
-            choices. append(0)
+            choices.append(0)
 
         return random.choice(choices)
 
     def recordTerminalState(self, x, y):
         f = open("terminal_States.txt", "a")
         f.write(str(x) + ", " + str(y) + '\r')
+        f.close()
+        return
+
+    def recordActionReward(self, action, reward):
+        f = open("State_and_Actions_Recording.csv", "a")
+        f.write(str(action) + ", " + str(reward) + ", ")
         f.close()
         return
 
@@ -137,15 +141,15 @@ class MyAgent:
         # your logic goes here
 
         # return self.myLogic1(reward)
-        #return self.myLogic2(reward)
+        # return self.myLogic2(reward)
         return self.myLogic3()
-        #return self.randomAct()
+        # return self.randomAct()
+
     async def runner(self):
         """Play the game with the server, following your logic in __mylogic() until it reaches a terminal state, reached step limit (5000), or receives an invalid reply. Print out the total reward. Your goal is to come up with a logic that always produces a high total reward. 
         """
         total_r = 0
         reward = 0
-
 
         STEP_LIMIT = 600
         step = 0
@@ -153,7 +157,7 @@ class MyAgent:
             # Set an action based on your logic
             print(f'step {step}')
             a = self.__mylogic(reward)
-            
+
             # Send the current state and action to the server
             # And receive the new state, reward, and termination flag
             message = f'{self.current_state[0]},{self.current_state[1]},{a}'
@@ -173,10 +177,8 @@ class MyAgent:
                 print('Normally terminated.')
                 break
 
-
-
             self.current_state = (new_x, new_y)
-            
+
             step += 1
         print(f'total reward = {total_r}')
 
@@ -198,7 +200,7 @@ class MyAgent:
         data = await reader.read(512)
         print(f'Received: {data.decode()!r} at {datetime.datetime.now()}')
 
-        results = (-1,-1,-1,-1) # dummy results for failed cases
+        results = (-1, -1, -1, -1)  # dummy results for failed cases
         is_valid = self.__is_valid(data.decode())
         if self.__is_valid(data.decode()):
             results = self.__parse_msg(data.decode())
