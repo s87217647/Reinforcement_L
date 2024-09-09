@@ -56,6 +56,8 @@ class MyAgent:
         terminal = int(reply[4])
         return new_x, new_y, r, terminal
     
+    def randomAct(self):
+        return random.choice([0,1,2,3])
 
     def myLogic1(self, reward:int) -> int :
         #logic 1 - pick from most rewarding move from the past
@@ -81,60 +83,39 @@ class MyAgent:
 
             return self.a
 
-    def myLogic2(self, reward:int) -> int :
-        # This logic attempts to find out all terminal state
-        # 0:y++, 1: y-- 2: x++, 3: x--
-        # for x in range(99):
-        #     for y in range(1):
-        #         self.current_state = (x - 1, y);
-
-
+    def myLogic2(self, reward: int) -> int:
         if self.a is None:
             self.a = 2
 
-        # if self.current_state[0] == 99 & self.a != 0:
-        #     self.a = 0
-        #     return self.a
-        #
-        # if self.current_state[0] == 99 & self.a == 0:
-        #     self.a = 3
-        #     return self.a
-
-
+        #Hit the wall
         if self.current_state[0] == 99:
             if self.current_state[1] % 2 == 0:
                 self.a = 0
             else:
                 self.a = 3
 
+        #Hit the opposite wall
         if self.current_state[0] == 0:
             if self.current_state[1] % 2 == 0:
                 self.a = 2
             else:
                 self.a = 0
 
-
-
-        # if self.current_state[0] in [99, 0]:
-        #     self.a = 0
-
-        # if self.current_state[0] == 99 & self.a == 0:
-        #     self.a = 3
-        #
-        # if self.current_state[0] == 99:
-        #     self.a = 0
-
-        # if self.right:
-        #         return 2
-        # else:
-        #     print("else")
-
         return self.a
 
+    def myLogic3(self) -> int:
+        # 0:y++, 1: y-- 2: x++, 3: x--
+        target = (4, 8)
 
+        choices = []
 
+        if target[0] - self.current_state[0] > 0:
+            choices.append(2)
 
-        # return 2
+        if target[1] - self.current_state[1] > 0:
+            choices. append(0)
+
+        return random.choice(choices)
 
     def recordTerminalState(self, x, y):
         f = open("terminal_States.txt", "a")
@@ -156,15 +137,9 @@ class MyAgent:
         # your logic goes here
 
         # return self.myLogic1(reward)
-        return self.myLogic2(reward)
-
-
-    #Original
-        self.a = random.choice([0,1,2,3]) # random policy
-        
-        # An action id should be returned
-        return self.a
-    
+        #return self.myLogic2(reward)
+        return self.myLogic3()
+        #return self.randomAct()
     async def runner(self):
         """Play the game with the server, following your logic in __mylogic() until it reaches a terminal state, reached step limit (5000), or receives an invalid reply. Print out the total reward. Your goal is to come up with a logic that always produces a high total reward. 
         """
