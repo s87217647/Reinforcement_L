@@ -20,7 +20,7 @@ class MyAgent:
     #     Added by Swift
         self.a = None
         self.rewardMap = {'0': 0, '1': 0, '2': 0, '3': 0}
-        self.right = True
+
 
     def __is_valid(self, d:str) -> bool:
         """Check if the reply contains valid values
@@ -136,9 +136,9 @@ class MyAgent:
 
         # return 2
 
-    def recordTerminalState(self):
+    def recordTerminalState(self, x, y):
         f = open("terminal_States.txt", "a")
-        f.write("From swift")
+        f.write(str(x) + ", " + str(y) + '\r')
         f.close()
         return
 
@@ -157,34 +157,6 @@ class MyAgent:
 
         # return self.myLogic1(reward)
         return self.myLogic2(reward)
-    # #logic 1 - pick from most rewarding move from the past
-    #
-    #     if self.a is not None:
-    #         self.rewardMap[str(self.a)] += reward
-    #
-    #     maxRewardAction = '0'
-    #     for a, r in self.rewardMap.items():
-    #         if r > self.rewardMap[maxRewardAction]:
-    #             maxRewardAction = a
-    #
-    #
-    #     print(self.rewardMap)
-    #
-    #     self.a = int(maxRewardAction)
-    # # if best policy is below 0, just random
-    #     if self.rewardMap[str(self.a)] < 0:
-    #         self.a = random.choice([0,1,2,3])
-    #
-    #
-    #     self.a = random.choice([0,1,2,3,0,2,0,2]) # random policy
-    #
-    #     self.a = 0
-    #     return self.a
-
-    # logic #2 ground covering
-        # Looks like my agent is living in a world of pain, getting to the terminal is the goal
-
-
 
 
     #Original
@@ -200,7 +172,7 @@ class MyAgent:
         reward = 0
 
 
-        STEP_LIMIT = 10000
+        STEP_LIMIT = 600
         step = 0
         while True:
             # Set an action based on your logic
@@ -225,6 +197,8 @@ class MyAgent:
             elif terminal:
                 print('Normally terminated.')
                 break
+
+
 
             self.current_state = (new_x, new_y)
             
