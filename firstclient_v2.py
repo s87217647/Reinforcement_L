@@ -20,6 +20,7 @@ class MyAgent:
     #     Added by Swift
         self.a = None
         self.rewardMap = {'0': 0, '1': 0, '2': 0, '3': 0}
+        self.right = True
 
     def __is_valid(self, d:str) -> bool:
         """Check if the reply contains valid values
@@ -55,6 +56,92 @@ class MyAgent:
         terminal = int(reply[4])
         return new_x, new_y, r, terminal
     
+
+    def myLogic1(self, reward:int) -> int :
+        #logic 1 - pick from most rewarding move from the past
+
+            if self.a is not None:
+                self.rewardMap[str(self.a)] += reward
+
+            maxRewardAction = '0'
+            for a, r in self.rewardMap.items():
+                if r > self.rewardMap[maxRewardAction]:
+                    maxRewardAction = a
+
+
+            #print(self.rewardMap)
+
+            self.a = int(maxRewardAction)
+        # if best policy is below 0, just random
+            if self.rewardMap[str(self.a)] < 0:
+                self.a = random.choice([0,1,2,3])
+
+
+            self.a = random.choice([0,1,2,3,0,2,0,2]) # random policy
+
+            return self.a
+
+    def myLogic2(self, reward:int) -> int :
+        # This logic attempts to find out all terminal state
+        # 0:y++, 1: y-- 2: x++, 3: x--
+        # for x in range(99):
+        #     for y in range(1):
+        #         self.current_state = (x - 1, y);
+
+
+        if self.a is None:
+            self.a = 2
+
+        # if self.current_state[0] == 99 & self.a != 0:
+        #     self.a = 0
+        #     return self.a
+        #
+        # if self.current_state[0] == 99 & self.a == 0:
+        #     self.a = 3
+        #     return self.a
+
+
+        if self.current_state[0] == 99:
+            if self.current_state[1] % 2 == 0:
+                self.a = 0
+            else:
+                self.a = 3
+
+        if self.current_state[0] == 0:
+            if self.current_state[1] % 2 == 0:
+                self.a = 2
+            else:
+                self.a = 0
+
+
+
+        # if self.current_state[0] in [99, 0]:
+        #     self.a = 0
+
+        # if self.current_state[0] == 99 & self.a == 0:
+        #     self.a = 3
+        #
+        # if self.current_state[0] == 99:
+        #     self.a = 0
+
+        # if self.right:
+        #         return 2
+        # else:
+        #     print("else")
+
+        return self.a
+
+
+
+
+        # return 2
+
+    def recordTerminalState(self):
+        f = open("terminal_States.txt", "a")
+        f.write("From swift")
+        f.close()
+        return
+
     def __mylogic(self, reward: int) -> int:
         """Implement your agent's logic to choose an action. You can use the current state, reward, and total reward.
 
@@ -68,31 +155,35 @@ class MyAgent:
 
         # your logic goes here
 
-    #logic 1 - pick from most rewarding move from the past
-
-        if self.a is not None:
-            self.rewardMap[str(self.a)] += reward
-
-        maxRewardAction = '0'
-        for a, r in self.rewardMap.items():
-            if r > self.rewardMap[maxRewardAction]:
-                maxRewardAction = a
-
-
-        print(self.rewardMap)
-
-        self.a = int(maxRewardAction)
-    # if best policy is below 0, just random
-        if self.rewardMap[str(self.a)] < 0:
-            self.a = random.choice([0,1,2,3])
-
-
-        self.a = random.choice([0,1,2,3,0,2,0,2]) # random policy
-
-        return self.a
+        # return self.myLogic1(reward)
+        return self.myLogic2(reward)
+    # #logic 1 - pick from most rewarding move from the past
+    #
+    #     if self.a is not None:
+    #         self.rewardMap[str(self.a)] += reward
+    #
+    #     maxRewardAction = '0'
+    #     for a, r in self.rewardMap.items():
+    #         if r > self.rewardMap[maxRewardAction]:
+    #             maxRewardAction = a
+    #
+    #
+    #     print(self.rewardMap)
+    #
+    #     self.a = int(maxRewardAction)
+    # # if best policy is below 0, just random
+    #     if self.rewardMap[str(self.a)] < 0:
+    #         self.a = random.choice([0,1,2,3])
+    #
+    #
+    #     self.a = random.choice([0,1,2,3,0,2,0,2]) # random policy
+    #
+    #     self.a = 0
+    #     return self.a
 
     # logic #2 ground covering
         # Looks like my agent is living in a world of pain, getting to the terminal is the goal
+
 
 
 
@@ -108,7 +199,8 @@ class MyAgent:
         total_r = 0
         reward = 0
 
-        STEP_LIMIT = 5000
+
+        STEP_LIMIT = 10000
         step = 0
         while True:
             # Set an action based on your logic
