@@ -58,20 +58,15 @@ class ValueAgent:
             for a in self.mdp.actions(s):
                 action_val = 0
                 for (sstate, p) in self.mdp.T(s, a):
-                    print(s, a, "expected reward = ", p * (self.mdp.R(s, a, sstate) + self.mdp.gamma * v[sstate]))
+                    # print(s, a, "expected reward = ", p * (self.mdp.R(s, a, sstate) + self.mdp.gamma * v[sstate]))
                     action_val += p * (self.mdp.R(s, a, sstate) + self.mdp.gamma * v[sstate])
 
                 action_to_val[a] = action_val
 
             actionValTable[s] = action_to_val
 
+        self.q = actionValTable
         return actionValTable
-
-
-
-
-
-
 
 
 
@@ -87,18 +82,27 @@ class ValueAgent:
         action_val_table = self.computeq_fromv(v)
 
         for s in self.mdp.states():
-            max_val_action = max(action_val_table[s], key=lambda x: action_val_table[s][x])
+            if max(action_val_table[s].values()) > v[s]:
+                action_to_reward = dict()
 
-            policy = dict()
+                # Calculate at a given state, all action values
+                for a in self.mdp.actions(s):
+                    reward = 0
+                    for ss, p in self.mdp.T(s, a):
+                        reward += p * (self.mdp.R(s, a, ss) + v[ss])
 
-            # todo: multiple max values situation isn't considered
-            for a in self.mdp.actions(s):
-                if a == max_val_action:
-                    policy[a] = 1
-                else:
-                    policy[a] = 0
+                    action_to_reward[a] = reward
 
-            self.pi[s] = policy
+                # Find out action with max value
+                best_action = max(action_to_reward, key=action_to_reward.get)
+
+                # Greedily select
+                for a in self.pi[s]:
+                    if a == best_action:
+                        self.pi[s][a] = 1
+                    else:
+                        self.pi[s][a] = 0
+
 
         return self.pi
 

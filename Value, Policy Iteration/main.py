@@ -9,7 +9,11 @@ if __name__ == '__main__':
     zero_val_states = {'0': 0, '1': 0, '2': 0}
 
     va = ValueAgent(mdp)
+    va.init_random_policy()
     print(va.computeq_fromv(zero_val_states))
+    print(va.pi)
+    va.greedy_policy_improvement(zero_val_states)
+    print(va.pi)
     #al_states))
 
 
