@@ -1,3 +1,5 @@
+import random
+
 from mymdp import MDP
 import math
 
@@ -146,8 +148,6 @@ class PIAgent(ValueAgent):
         super().__init__(mdp, conv_thresh)
         super().init_random_policy() # initialize its policy function with the random policy
 
-        for s in self.mdp.states():
-            self.v[s] = 0
 
 
     def __iter_policy_eval(self, pi: dict[str,dict[str,float]]) -> dict[str,float]:
@@ -162,24 +162,20 @@ class PIAgent(ValueAgent):
             dict[str,float]: state-value table {state:v-value}
         """
 
-
         while True:
-            new_state_val = dict()
+            self.v_update_history.append(dict(self.v))
 
             for s in self.mdp.states():
                 new_val = 0
 
                 for action in pi[s]:
                     for ss, t_prob in self.mdp.T(s, action):
-                        new_val += pi[s][action] * t_prob * self.mdp.R(s, action, ss) + self.mdp.gamma * self.v[ss]
+                        new_val += pi[s][action] * t_prob * (self.mdp.R(s, action, ss) + self.mdp.gamma * self.v[ss])
 
-                new_state_val[s] = new_val
+                self.v[s] = new_val
 
-            if not super().check_term(self.v, new_state_val):
+            if not super().check_term(self.v, self.v_update_history[-1]):
                 break
-
-            self.v = new_state_val
-            self.v_update_history.append(new_state_val)
 
         return self.v
 
@@ -201,12 +197,28 @@ class PIAgent(ValueAgent):
         """
 
         # policy was randomly initialized
+        # Initialize state value
+        for s in self.mdp.states():
+            # actions exists, not the terminal state
+            if self.mdp.actions(s):
+                self.v[s] = random.random()
+            else:
+                self.v[s] = 0
+
+        print("Init state", self.v)
+
+
 
         while True:
-            self.__iter_policy_eval(self.pi)
+            print("policy updates")
+            old_policy = dict(self.pi)
 
-            if self.pi == super().greedy_policy_improvement(self.v):
+            self.__iter_policy_eval(self.pi)
+            super().greedy_policy_improvement(self.v)
+
+            if old_policy == self.pi:
                 break
+
 
         return self.pi
 
