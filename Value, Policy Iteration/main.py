@@ -18,9 +18,9 @@ if __name__ == '__main__':
 
 
     pia = PIAgent(mdp)
-    pia.policy_iteration()
-    for x in pia.v_update_history:
-        print(x)
+    print(pia.policy_iteration())
+    # for x in pia.v_update_history:
+    #     print(x)
 
     #
     # via = VIAgent(mdp)

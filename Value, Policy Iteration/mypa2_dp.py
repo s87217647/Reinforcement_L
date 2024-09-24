@@ -1,3 +1,4 @@
+import copy
 import random
 
 from mymdp import MDP
@@ -41,6 +42,17 @@ class ValueAgent:
 
             self.pi[s] = policy
 
+
+    def init_random_state(self):
+        # Initialize state value
+        for s in self.mdp.states():
+            # actions exists, not the terminal state
+            if self.mdp.actions(s):
+                self.v[s] = random.random()
+            else:
+                self.v[s] = 0
+
+        print("Init state", self.v)
 
     def computeq_fromv(self, v: dict[str,float]) -> dict[str,dict[str,float]]:
         """Given a state-value table, compute the action-state values.
@@ -132,6 +144,9 @@ class ValueAgent:
 
         return False
 
+    def policy_evaluation(self, pi: dict[str,dict[str,float]]):
+        pass
+
 
 class PIAgent(ValueAgent):
     """Policy Iteration Agent class
@@ -147,6 +162,7 @@ class PIAgent(ValueAgent):
         """
         super().__init__(mdp, conv_thresh)
         super().init_random_policy() # initialize its policy function with the random policy
+        super().init_random_state()
 
 
 
@@ -163,7 +179,7 @@ class PIAgent(ValueAgent):
         """
 
         while True:
-            self.v_update_history.append(dict(self.v))
+            self.v_update_history.append(copy.deepcopy(self.v))
 
             for s in self.mdp.states():
                 new_val = 0
@@ -196,22 +212,8 @@ class PIAgent(ValueAgent):
             pi (dict[str,dict[str,float]]): a policy table {state:{action:probability}}
         """
 
-        # policy was randomly initialized
-        # Initialize state value
-        for s in self.mdp.states():
-            # actions exists, not the terminal state
-            if self.mdp.actions(s):
-                self.v[s] = random.random()
-            else:
-                self.v[s] = 0
-
-        print("Init state", self.v)
-
-
-
         while True:
-            print("policy updates")
-            old_policy = dict(self.pi)
+            old_policy = copy.deepcopy(self.pi)
 
             self.__iter_policy_eval(self.pi)
             super().greedy_policy_improvement(self.v)
@@ -240,6 +242,7 @@ class VIAgent(ValueAgent):
         """        
         super().__init__(mdp, conv_thresh)
         super().init_random_policy() # initialize its policy function with the random policy
+        super().init_random_state()
 
     def value_iteration(self) -> dict[str,dict[str,float]]:
         """Value iteration algorithm. Compute the optimal v values using the value iteration.
@@ -254,10 +257,6 @@ class VIAgent(ValueAgent):
         Returns:
             pi (dict[str,dict[str,float]]): a policy table {state:{action:probability}}
         """
-
-        # initialization
-        for s in self.mdp.states():
-            self.v[s] = 0
 
 
         while True:
