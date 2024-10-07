@@ -17,6 +17,7 @@ if __name__ == '__main__':
     print(via.v_update_history[-1])
 
     with open("./pi_history.log", 'w') as f:
+
         for h in pia.v_update_history:
             f.write(str(h) + '\r')
 

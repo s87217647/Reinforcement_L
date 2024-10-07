@@ -48,7 +48,7 @@ class ValueAgent:
         for s in self.mdp.states():
             # actions exists, not the terminal state
             if self.mdp.actions(s):
-                self.v[s] = random.random() - 50
+                self.v[s] = random.random()
             else:
                 self.v[s] = 0
 
@@ -241,13 +241,16 @@ class VIAgent(ValueAgent):
         """
 
         while True:
-            old_policy = copy.deepcopy(self.pi)
+            # old_policy = copy.deepcopy(self.pi)
             self.v_update_history.append(copy.deepcopy(self.v))
 
             super().policy_evaluation(self.pi)
             super().greedy_policy_improvement(self.v)
 
-            if old_policy == self.pi:
+            # if old_policy == self.pi:
+            #     break
+
+            if not super().check_term(self.v, self.v_update_history[-1]):
                 break
 
         return self.pi
