@@ -179,7 +179,7 @@ class MCCAgent(ValueRLAgent):
             if terminated or truncated:
                 break
 
-            return episode
+        return episode
     def learn(self) -> None:
         """Monte Carlo Control algorithm
         Update the Q table (self.q) for self.total_epi number of episodes.
