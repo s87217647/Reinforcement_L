@@ -1,6 +1,7 @@
 from typing import Any
 import random
 import gymnasium as gym
+import numpy as np
 
 
 def argmax_action(d: dict[Any, float]) -> Any:
@@ -121,18 +122,22 @@ class ValueRLAgent():
         episode = list()
         done = False
 
-        state = 0 # again, does the state start with 0 or 1? Or it doesn't matter as long as the program is consistent
+        state, info = self.env.reset()
 
-        while(max_steps > 0):
+        over = False
+        while not over:
+            if max_steps == 0:
+                break
+
+            max_steps -= 1
+
             max_val_action = argmax_action(self.q[state])
+            observation, reward, terminated, truncated, info = self.env.step(max_val_action)
+            episode.append((state, max_val_action, reward))
+            state = observation
 
-            print()
-
-
-        # TODO: implement here
-
-        # how do I know if a state is terminal? That is doesn't have any action to choose from?
-
+            done = terminated
+            over = truncated or terminated
 
         return (episode, done)
 
@@ -146,15 +151,13 @@ class ValueRLAgent():
         Returns:
             float: the return value. None if done is False.
         """
-        # in this case, what does done or not affect the function behavior?
-        # I guess if it's done the last step doesn't have a reward
-        episode.reverse()
 
-        if done:
-            episode.pop(0)
+        if not done:
+            return None
+
 
         G = 0
-
+        episode.reverse()
         for step in episode:
             G = self.gamma * G + step[2]
 
@@ -162,11 +165,21 @@ class ValueRLAgent():
 
 
 
-
-
-
-
 class MCCAgent(ValueRLAgent):
+    def episode_generation(self, max_steps):
+        episode = []
+        state, observation = self.env.reset()
+
+        for step in range(max_steps):
+            action = self.choose_action(state)
+            observation, reward, terminated, truncated, info = self.env.step(action)
+            episode.append((state, action, reward))
+            state = observation
+
+            if terminated or truncated:
+                break
+
+            return episode
     def learn(self) -> None:
         """Monte Carlo Control algorithm
         Update the Q table (self.q) for self.total_epi number of episodes.
@@ -177,8 +190,13 @@ class MCCAgent(ValueRLAgent):
         """
 
         max_steps = 500
+        for i in range(self.total_epi):
+            episode = self.episode_generation(max_steps)
+            for j in range(len(episode)):
+                G = self.calc_return(episode[j:], True)
 
-        pass
+                step = episode[j]
+                self.q[step[0]][step[1]] += self.alpha * (G - self.q[step[0]][step[1]])
 
 
 class SARSAAgent(ValueRLAgent):
@@ -188,7 +206,19 @@ class SARSAAgent(ValueRLAgent):
 
         The results should be reflected to its q table.
         """
-        pass
+        for i in range(self.total_epi):
+            state, info = self.env.reset()
+
+            while True:
+                action = self.choose_action(state)
+                ss, reward, terminated, truncated, info = self.env.step(action)
+                self.q[state][action] += self.alpha * (reward + self.gamma * self.q[ss][self.choose_action(ss)] - self.q[state][action])
+                state = ss
+
+                if terminated or truncated:
+                    break
+
+
 
 
 class QLAgent(SARSAAgent):
@@ -198,10 +228,25 @@ class QLAgent(SARSAAgent):
 
         The results should be reflected to its q table.
         """
-        pass
+        for i in range(self.total_epi):
+            state, info = self.env.reset()
+
+            while True:
+                action = self.choose_action(state)
+                ss, reward, terminated, truncated, info = self.env.step(action)
+                self.q[state][action] += self.alpha * (reward + self.gamma * self.q[ss][self.choose_action(ss)] - self.q[state][action])
+                state = ss
+
+                if terminated or truncated:
+                    break
+
+
+
 
     def choose_action(self, ss: int) -> int:
         """
         [optional] You may want to override this method.
         """
-        pass
+        return argmax_action(self.q[ss])
+
+
