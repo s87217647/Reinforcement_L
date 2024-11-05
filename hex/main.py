@@ -7,38 +7,60 @@ from myagents import myDumbAgent, mySmartAgent
 import itertools
 
 if __name__ == '__main__':
-    print("Hi World")
 
-    env = myhexenv.env(render_mode="human")
+    env = myhexenv.env(board_size=8, render_mode="human")
     env.reset()
 
-    dummy = myDumbAgent
-    dummy2 = myDumbAgent
-    smarty = mySmartAgent
 
-    agents = (myDumbAgent("dummy1"), myDumbAgent("dummy2"))
-
-    # for agent in itertools.cycle(agents):
-    #     print(agent.ID)
+    dummy1 = myDumbAgent("dummy1")
+    dummy2 = myDumbAgent("dummy2")
 
 
 
-    # for agent in env.agent_iter():
-    #         env.step("s")
-    #         print(agent)
+    # #todo: make sure step is AEC
+    # for agent, env_agent in zip(itertools.cycle(agents), env.agent_iter()):
+    #     action = agent.random_action(env.action_space(env_agent), env.observe(env_agent))
+    #     env.step(action)
+    #     print(agent.ID, env_agent)
 
-    for agent, env_agent in zip (itertools.cycle(agents), env.agent_iter()):
-        action = agent.random_action(env.action_space(env_agent), env.observe(env_agent))
-        env.step(5)
-        print(agent.ID, env_agent)
+    # while not env.is_game_over():
+    #     agent = env.agent_selection
+    #     observation, reward, termination, truncation, info = env.last()
+    #
+    #     if termination or truncation:
+    #         action = None  # Skip if the episode is over for this agent
+    #     else:
+    #         if agent == 'black':  # Assign strategy for player 1
+    #             action = dummy1.random_action(observation, env.action_space(agent))
+    #         elif agent == 'white':  # Assign strategy for player 2
+    #             action = dummy2.random_action(observation, env.action_space(agent))
+    #
+    #     # Step the environment forward with the chosen action
+    #     env.step(action)
+
+    for agent in env.agent_iter():
+
+        observation, reward, termination, truncation, info = env.last()
+
+        if termination or truncation:
+            break
+            # action = None  # Skip if the episode is over for this agent
+
+        else:
+            if agent == 'black':  # Assign strategy for player 1
+                action = dummy1.random_action(observation, env.action_space(agent))
+            elif agent == 'white':  # Assign strategy for player 2
+                action = dummy2.random_action(observation, env.action_space(agent))
+
+        # Step the environment forward with the chosen action
+        env.step(action)
 
 
-    # env.state[0][0][0] = True
-    # env.step(5)
-    # env.state[0][1][1] = True
-    # env.step(5)
+    env.close()
 
 
-    # env.step(5)
-    # env.step(5)
-    # env.step(5)
+
+
+
+
+    print("This is the end, hold your breath and count to ten")

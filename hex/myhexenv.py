@@ -1,4 +1,6 @@
 import functools
+import sys
+from collections import deque
 
 import gymnasium as gym
 import numpy as np
@@ -16,8 +18,8 @@ from pettingzoo.utils.env import AgentID
 import pettingzoo.classic.go.go
 
 
-def env(render_mode=None):
-    env = MyHexGame(render_mode=render_mode)
+def env(board_size=11, render_mode=None):
+    env = MyHexGame(board_size=board_size, render_mode=render_mode)
 
     # wrapping?
 
@@ -37,6 +39,9 @@ class MyHexGame(AECEnv):
         # self._observation_spaces = np.zeros((board_size, board_size, 3))
         self.observation_spaces = {agent: spaces.Box(low=0, high=1, shape=(self.board_size, self.board_size, 2), dtype=bool) for agent in self.possible_agents}
         self.render_mode = render_mode
+
+        self.agents_to_board = {"black": 0, "white": 1}
+
     def reset(
         self,
         seed: int | None = None,
@@ -48,12 +53,12 @@ class MyHexGame(AECEnv):
         self.terminations = {agent: False for agent in self.agents}
         self.truncations = {agent: False for agent in self.agents}
         self.infos = {agent: {} for agent in self.agents}
-        self.state = np.empty((self.board_size, self.board_size, 3), dtype=bool)
+        self.state = np.empty((self.board_size, self.board_size, 2), dtype=bool)
 
         # don't know if I need it
         # self.observations = {agent: None for agent in self.agents}
-        self.round = 0
 
+        self.move_count = 0
         self._agent_selector = agent_selector(self.agents)
         self.agent_selection = self._agent_selector.next()
 
@@ -91,7 +96,7 @@ class MyHexGame(AECEnv):
                         board[i][j] = ' '
 
 
-            print(f'\rRound {self.round}; {self.agents[0]}: horizontal; {self.agents[1]}: vertical')
+            print(f'move count is {self.move_count}')
 
             paddingCount = 0
             for row in board:
@@ -102,39 +107,132 @@ class MyHexGame(AECEnv):
 
 
     def observe(self, agent):
-        #should return matching agent's obseravtion
+        #black is horizontal & first board
         return self.state
-
+        # if agent == "black":
+        #     return self.state
+        # else:
+        #     return self.state
 
     # problem now: how to match agent with the move
     # I guess I can use two iterators in the driver to make sure it always match somehow
     # reward in this case is not very important, coz I can hard code smarty's move
+    def neighbors(self, r, c):
+        for nr, nc in [(r - 1, c), (r - 1, c + 1), (r + 1, c), (r + 1, c - 1), (r, c - 1), (r, c + 1)]:
+            if 0 <= nr < self.board_size and 0 <= nc < self.board_size and self.state[nr][nc][1]:
+                yield nr, nc
+
+    def white_vertical_connected(self) -> bool:
+        # white is vertical
+
+        rows, cols = self.board_size, self.board_size
+        # Start BFS from the top row (adjust if left-to-right connection is needed)
+        queue = [(0, c) for c in range(cols) if self.state[0][c][1]]
+        visited = set(queue)
+
+        while queue:
+            r, c = queue.pop(0)
+
+            # If we reach the bottom row, the board is connected
+            if r == rows - 1:
+                return True
+
+            for nr, nc in self.neighbors(r, c):
+                if (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+
+        return False
+
+    def black_horizontal_connected(self) -> bool:
+        rows, cols = self.board_size, self.board_size
+        # Start BFS from the top row (adjust if left-to-right connection is needed)
+        queue = [(r, 0) for r in range(rows) if self.state[r][0][0]]
+        visited = set(queue)
+
+        while queue:
+            r, c = queue.pop(0)
+
+            # If we reach the bottom row, the board is connected
+            if c == cols - 1:
+                return True
+
+            for nr, nc in self.neighbors(r, c):
+                if (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+
+        return False
+
+
+    def won(self, agent) -> bool:
+        rows, cols = self.board_size, self.board_size
+        # Start BFS from the top row (adjust if left-to-right connection is needed)
+        if agent == "black":
+            queue = [(r, 0) for r in range(rows) if self.state[r][0][0]]
+        elif agent == "white":
+            queue = [(0, c) for c in range(cols) if self.state[0][c][1]]
+
+        visited = set(queue)
+
+        while queue:
+            r, c = queue.pop(0)
+
+            # If we reach the bottom row, the board is connected
+
+            if agent == "black" and c == cols - 1:
+                return True
+            if agent == "white" and r == rows - 1:
+                return True
+
+            for nr, nc in self.neighbors(r, c):
+                if (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+
+        return False
+
+
 
     def is_game_over(self) -> bool:
+        # connection exists
+        full = True
+        for row in range(self.board_size):
+            for col in range(self.board_size):
+                cell = self.state[row][col]
+                if not (cell[0] or cell[1]):
+                    full = False
 
-        return self.round * 2 >= self.board_size ** 2
+        self.black_horizontal_connected()
+
+
+
+
+        return full
+
+
 
     def step(self, action):
         agent = self.agent_selection
 
-        if self.terminations[agent] or self.truncations[agent]:
-            self._was_dead_step(None)
+        # if self.terminations[agent] or self.truncations[agent]:
+        #     self._was_dead_step(action)
 
-        self.round += 1
-
-        if self.is_game_over():
-            for agent in self.agents:
-                self.terminations[agent] = True
+        col, row = to_coordinate(action, self.board_size)
+        self.state[col][row][self.agents_to_board[agent]] = True
 
 
-
-
+        # prep for next round
+        self.move_count += 1
         self.agent_selection = self._agent_selector.next()
 
 
+        if self.is_game_over()
 
         # self._cumulative_rewards[agent] = 0
         # self.state[self.agent_selection] = action
+
+        #todo:reward handling
 
 
         # do the stepping automatically,
@@ -154,3 +252,11 @@ class MyHexGame(AECEnv):
 
     def _convert_to_dict(self, list_of_list):
         return dict(zip(self.possible_agents, list_of_list))
+
+
+
+def to_coordinate(action: int, board_size : int) -> (int, int):
+    col = action // board_size
+    row = action % board_size
+
+    return col, row
