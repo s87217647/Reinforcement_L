@@ -119,12 +119,11 @@ class MyHexGame(AECEnv):
     # reward in this case is not very important, coz I can hard code smarty's move
     def neighbors(self, r, c):
         for nr, nc in [(r - 1, c), (r - 1, c + 1), (r + 1, c), (r + 1, c - 1), (r, c - 1), (r, c + 1)]:
-            if 0 <= nr < self.board_size and 0 <= nc < self.board_size and self.state[nr][nc][1]:
+            if 0 <= nr < self.board_size and 0 <= nc < self.board_size and self.state[nr][nc][self.agents_to_board[self.agent_selection]]:
                 yield nr, nc
 
     def white_vertical_connected(self) -> bool:
         # white is vertical
-
         rows, cols = self.board_size, self.board_size
         # Start BFS from the top row (adjust if left-to-right connection is needed)
         queue = [(0, c) for c in range(cols) if self.state[0][c][1]]
@@ -135,6 +134,7 @@ class MyHexGame(AECEnv):
 
             # If we reach the bottom row, the board is connected
             if r == rows - 1:
+                print(f"white won {r, c}")
                 return True
 
             for nr, nc in self.neighbors(r, c):
@@ -149,52 +149,38 @@ class MyHexGame(AECEnv):
         # Start BFS from the top row (adjust if left-to-right connection is needed)
         queue = [(r, 0) for r in range(rows) if self.state[r][0][0]]
         visited = set(queue)
+        self.predecessors = {}
 
         while queue:
             r, c = queue.pop(0)
 
-            # If we reach the bottom row, the board is connected
             if c == cols - 1:
+                print(f"black won {r,c}")
+                while True:
+                    r, c = self.predecessors[(r, c)]
+                    print(r, c)
+
+                    if not self.predecessors.get(r, c):
+                        break
+
                 return True
 
             for nr, nc in self.neighbors(r, c):
                 if (nr, nc) not in visited:
+                    self.predecessors[(nr, nc)] = (r, c)
                     visited.add((nr, nc))
                     queue.append((nr, nc))
 
         return False
 
-
-    def won(self, agent) -> bool:
-        rows, cols = self.board_size, self.board_size
-        # Start BFS from the top row (adjust if left-to-right connection is needed)
-        if agent == "black":
-            queue = [(r, 0) for r in range(rows) if self.state[r][0][0]]
-        elif agent == "white":
-            queue = [(0, c) for c in range(cols) if self.state[0][c][1]]
-
-        visited = set(queue)
-
-        while queue:
-            r, c = queue.pop(0)
-
-            # If we reach the bottom row, the board is connected
-
-            if agent == "black" and c == cols - 1:
-                return True
-            if agent == "white" and r == rows - 1:
-                return True
-
-            for nr, nc in self.neighbors(r, c):
-                if (nr, nc) not in visited:
-                    visited.add((nr, nc))
-                    queue.append((nr, nc))
-
-        return False
+    def got_a_winner(self):
+        if self.agent_selection == "black":
+            return self.black_horizontal_connected()
+        else:
+            return self.white_vertical_connected()
 
 
-
-    def is_game_over(self) -> bool:
+    def is_full(self) -> bool:
         # connection exists
         full = True
         for row in range(self.board_size):
@@ -203,31 +189,52 @@ class MyHexGame(AECEnv):
                 if not (cell[0] or cell[1]):
                     full = False
 
-        self.black_horizontal_connected()
-
-
-
 
         return full
 
 
 
     def step(self, action):
-        agent = self.agent_selection
+        if self.terminations[self.agent_selection] or self.truncations[self.agent_selection]:
+            self._was_dead_step(action)
+            return
 
-        # if self.terminations[agent] or self.truncations[agent]:
-        #     self._was_dead_step(action)
+        agent = self.agent_selection
+        opponent = "white" if agent == "black" else "black"
+
 
         col, row = to_coordinate(action, self.board_size)
-        self.state[col][row][self.agents_to_board[agent]] = True
+        target_location = self.state[col][row]
+
+        if not any(target_location):
+            target_location[self.agents_to_board[agent]] = True
+        else: # conflict exists
+            if self.move_count == 1:
+                #invoke pie rule
+                target_location[self.agents_to_board[agent]] = True
+                target_location[self.agents_to_board[opponent]] = False
+
+            else:
+                gym.logger.warn(f"conflicts at {row}, {col}")
+                #conflicts shouldn't exist
+
+        self.rewards[agent] = -1
 
 
-        # prep for next round
+        if self.got_a_winner():
+            self.rewards[agent] = 100
+            self.terminations = {agent: True for agent in self.agents}
+
+        if self.is_full():
+            self.terminations = {agent: True for agent in self.agents}
+
+
+        # wrap up and prep for next round
+        self._accumulate_rewards()
+        self._clear_rewards()
         self.move_count += 1
         self.agent_selection = self._agent_selector.next()
-
-
-        if self.is_game_over()
+        self.infos["moves"] = self.move_count
 
         # self._cumulative_rewards[agent] = 0
         # self.state[self.agent_selection] = action
