@@ -1,4 +1,4 @@
-# pa5
+# Customized Petting Zoo Hex Env and Deep Double Q Agent with Replay Buffer
 
-Group 5 agent
-This super smart Hex agent has a insatiable blood lust for winning Hex game
+## Hex Env
+A detailed description [here](https://github.com/sjsu-interconnect/ourhexgame)
