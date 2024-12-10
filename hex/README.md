@@ -1,4 +1,4 @@
-# Deep Double Q Learning Agent with Replay Buffer
+# Deep Q Learning Agent with Replay Buffer
 
 ## Decaying Epsilon Greedy
 Starting with high explore probabilities, gradually go low until it hits the lower bound. Reset when the game is stopped
