@@ -15,4 +15,4 @@ A diverse environment is kept in mind during training. Red/blue, dense/sparse is
 ## Customized Petting Zoo Hex Env
 Got a nice visualization of the broad using pygame
 ![render](https://github.com/s87217647/Reinforcement_L/blob/main/hex/pygame%20render.png)
-A more detailed description [here](https://github.com/sjsu-interconnect/ourhexgame)
+OurHex [here](https://github.com/sjsu-interconnect/ourhexgame)
